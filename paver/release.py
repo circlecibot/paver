@@ -4,7 +4,7 @@ from paver.options import Bunch
 from paver.tasks import VERSION
 
 setup_meta = Bunch(
-    name='Paver',
+    name='paver-ext',
     version=VERSION,
     description='Easy build, distribution and deployment scripting',
     long_description="""Paver is a Python-based build/distribution/deployment
@@ -16,7 +16,7 @@ needs and requirements is also easy.""",
     author_email='dangoor+paver@gmail.com',
     maintainer='Lukas Linhart',
     maintainer_email='bugs@almad.net',
-    url='http://github.com/paver/paver',
+    url='http://github.com/gregorynicholas/paver',
     packages=['paver', 'paver.deps', 'paver.ext'],
     tests_require=['nose', 'virtualenv', 'mock', 'cogapp'],
     classifiers=[
