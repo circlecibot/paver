@@ -20,10 +20,12 @@ from paver.version import VERSION
 if six.PY3:
     xrange = range
 
+
 class PavementError(Exception):
     """Exception that represents a problem in the pavement.py file
     rather than the process of running a build."""
     pass
+
 
 class BuildFailure(Exception):
     """Represents a problem with some part of the build's execution."""
@@ -72,11 +74,11 @@ class Environment(object):
 
         if self._task_output is not None:
             self._task_output.append(output)
-        if level > 2 or (level > 1 and not self.quiet) or \
-            self.verbose:
+        if level > 2 or (level > 1 and not self.quiet) or self.verbose:
             self._print(output)
 
     def _print(self, output):
+        # todo: colored output..
         print_(output)
         sys.stdout.flush()
 
@@ -129,11 +131,11 @@ class Environment(object):
         if not task:
             all_tasks = self.get_tasks()
             matches = [t for t in all_tasks
-                        if t.shortname == taskname]
+                       if t.shortname == taskname]
             if len(matches) > 1:
                 matched_names = [t.name for t in matches]
-                raise BuildFailure("Ambiguous task name %s (%s)" %
-                                    (taskname, matched_names))
+                raise BuildFailure("Ambiguous task name %s (%s)" % (
+                    taskname, matched_names))
             elif matches:
                 task = matches[0]
         return task
@@ -144,13 +146,14 @@ class Environment(object):
             task.paver_constraint()
         if options:
             for option in options:
-                task._set_value_to_task(task_name, option, None, options[option])
+                task._set_value_to_task(
+                    task_name, option, None, options[option])
 
         if args and task.consume_args > 0:
             args = _consume_nargs(task, args)
         elif args and (task.consume_args == 0):
-            raise BuildFailure("Task %s is not decorated with @consume_(n)args,"
-                                "but has been called with them")
+            raise BuildFailure("Task %s is not decorated with @consume_(n)args"
+                               ", but has been called with them")
         task()
 
     def _run_task(self, task_name, needs, func):
@@ -168,7 +171,8 @@ class Environment(object):
                 try:
                     kw[arg] = getattr(self, arg)
                 except AttributeError:
-                    raise PavementError("Task %s requires an argument (%s) that is "
+                    raise PavementError(
+                        "Task %s requires an argument (%s) that is "
                         "not present in the environment" % (task_name, arg))
 
         if not self._task_in_progress:
@@ -177,15 +181,18 @@ class Environment(object):
             running_top_level = True
         else:
             running_top_level = False
+
         def do_task():
             self.info("---> " + task_name)
             for req in needs:
                 task = self.get_task(req)
                 if not task:
-                    raise PavementError("Requirement %s for task %s not found" %
+                    raise PavementError(
+                        "Requirement %s for task %s not found" %
                         (req, task_name))
                 if not isinstance(task, Task):
-                    raise PavementError("Requirement %s for task %s is not a Task"
+                    raise PavementError(
+                        "Requirement %s for task %s is not a Task"
                         % (req, task_name))
                 if not task.called:
                     task()
@@ -217,6 +224,7 @@ Captured Task Output:
             return self._all_tasks
         result = set()
         modules = set()
+
         def scan_module(module):
             modules.add(module)
             for name in dir(module):
@@ -226,6 +234,10 @@ Captured Task Output:
                 if isinstance(item, types.ModuleType) and item not in modules:
                     scan_module(item)
         scan_module(self.pavement)
+
+        import paver.ext
+        scan_module(paver.ext)
+
         for finder in self.task_finders:
             result.update(finder.get_tasks())
         self._all_tasks = result
@@ -233,6 +245,7 @@ Captured Task Output:
 
 environment_stack = []
 environment = Environment()
+
 
 def _consume_nargs(task, args):
     """Set up args in environment function of number of args task consumes.
@@ -264,20 +277,35 @@ def _consume_nargs(task, args):
         return [] if task.consume_args == float('inf') \
                   else args[task.consume_args:]
 
+
 def _import_task(taskname):
     """Looks up a dotted task name and imports the module as necessary
     to get at the task."""
-    parts = taskname.split('.')
-    if len(parts) < 2:
-        return None
-    func_name = parts[-1]
-    full_mod_name = ".".join(parts[:-1])
-    mod_name = parts[-2]
+
+    # split the extension module prefix by convention of a colon,
+    # and search the extension namespace..
+    if ":" in taskname:
+        mod_name, func_name = taskname.split(":")
+        full_mod_name = "paver.ext." + mod_name
+        fromlist = [func_name]
+
+    # parse the task from
+    else:
+        parts = taskname.split('.')
+        if len(parts) < 2:
+            return None
+        func_name = parts[-1]
+        full_mod_name = ".".join(parts[:-1])
+        mod_name = parts[-2]
+        fromlist = [mod_name]
+
     try:
-        module = __import__(full_mod_name, globals(), locals(), [mod_name])
+        md = __import__(
+          full_mod_name, globals(), locals(), fromlist)
+        return getattr(md, func_name, None)
     except ImportError:
         return None
-    return getattr(module, func_name, None)
+
 
 class Task(object):
     called = False
@@ -325,7 +353,10 @@ class Task(object):
         return "Task: " + self.__name__
 
     def _make_option_from_tuple(self, option):
-        # option is (longname, short, desc)
+        """
+        not having a default arg has bugged me for so long..
+        """
+        # option is (longname, short, desc, [default])
         longname = option[0]
         if longname and longname.endswith('='):
             action = "store"
@@ -334,6 +365,11 @@ class Task(object):
             action = "store_true"
 
         destination = longname.replace('-', '_')
+        help = option[2]
+
+        default = None
+        if len(option) > 3:
+          default = option[3]
 
         opts = []
 
@@ -344,7 +380,11 @@ class Task(object):
             opts.append('--' + longname)
 
         return optparse.make_option(*opts,
-            **dict(action=action, dest=destination, help=option[2]))
+            **dict(
+                action=action,
+                dest=destination,
+                help=help,
+                default=default))
 
     @property
     def parser(self):
@@ -536,6 +576,7 @@ class Task(object):
 
         return rv
 
+
 def task(func):
     """Specifies that this function is a task.
 
@@ -546,6 +587,7 @@ def task(func):
         return func
     task = Task(func)
     return task
+
 
 def needs(*args):
     """Specifies tasks upon which this task depends.
@@ -573,6 +615,7 @@ def needs(*args):
         return func
     return entangle
 
+
 def cmdopts(options, share_with=None):
     """Sets the command line options that can be set for this task.
     This uses the same format as the distutils command line option
@@ -593,6 +636,7 @@ def cmdopts(options, share_with=None):
         func.share_options_with = share_with
         return func
     return entangle
+
 
 def might_call(*args):
     """
@@ -632,10 +676,12 @@ def consume_nargs(nb_args=None):
 
     return consume_args_wrapper
 
+
 def consume_args(func):
     """Any command line arguments that appear after this task on the
     command line will be placed in options.args."""
     return consume_nargs()(func)
+
 
 def no_auto(func):
     """Specify that this task does not depend on the auto task,
@@ -644,11 +690,13 @@ def no_auto(func):
     func.no_auto = True
     return func
 
+
 def no_help(func):
     """Do not show this task in paver help."""
     func = task(func)
     func.no_help = True
     return func
+
 
 def _preparse(args):
     task = None
@@ -674,30 +722,31 @@ line (%s) attempts to set an option.""" % (args))
             break
     return task, taskname, args
 
+
 def _parse_global_options(args):
     # this is where global options should be dealt with
-    parser = optparse.OptionParser(usage=
-        """Usage: %prog [global options] taskname [task options] """
+    parser = optparse.OptionParser(
+        usage="""Usage: %prog [global options] taskname [task options] """
         """[taskname [taskoptions]]""", version="Paver %s" % (VERSION),
         add_help_option=False)
 
     environment.help_function = parser.print_help
 
     parser.add_option('-n', '--dry-run', action='store_true',
-                    help="don't actually do anything")
+                      help="don't actually do anything")
     parser.add_option('-v', "--verbose", action="store_true",
-                    help="display all logging output")
+                      help="display all logging output")
     parser.add_option('-q', '--quiet', action="store_true",
-                    help="display only errors")
+                      help="display only errors")
     parser.add_option("-i", "--interactive", action="store_true",
-                    help="enable prompting")
+                      help="enable prompting")
     parser.add_option("-f", "--file", metavar="FILE",
-                    help="read tasks from FILE [%default]")
+                      help="read tasks from FILE [%default]")
     parser.add_option('-h', "--help", action="store_true",
-                    help="display this help information")
+                      help="display this help information")
     parser.add_option("--propagate-traceback", action="store_true",
-                    help="propagate traceback, do not hide it under BuildFailure"
-                        "(for debugging)")
+                      help="propagate traceback, do not hide it under "
+                      "BuildFailure (for debugging)")
     parser.set_defaults(file=environment.pavement_file)
 
     parser.disable_interspersed_args()
@@ -708,6 +757,7 @@ def _parse_global_options(args):
         setattr(environment, key, value)
 
     return args
+
 
 def _parse_command_line(args):
     task, taskname, args = _preparse(args)
@@ -733,38 +783,52 @@ def _parse_command_line(args):
 
     return task, args
 
+
 def _cmp_task_names(a, b):
     a = a.name
     b = b.name
+
     a_in_pavement = a.startswith("pavement.")
     b_in_pavement = b.startswith("pavement.")
     if a_in_pavement and not b_in_pavement:
         return 1
     if b_in_pavement and not a_in_pavement:
         return -1
+
+    a_in_paver = a.startswith("paver_")
+    b_in_paver = b.startswith("paver_")
+    if a_in_paver and not b_in_paver:
+        return 1
+    if b_in_paver and not a_in_paver:
+        return -1
+
     # trick taken from python3porting.org
-    return (a > b) - (b < a)
+    # return (a > b) - (b < a)
+    return 0
 
 if six.PY3:
     import functools
     _task_names_key = functools.cmp_to_key(_cmp_task_names)
 
+
 def _group_by_module(items):
-    groups = []
-    current_group_name = None
-    current_group = None
-    maxlen = 5
+    from collections import OrderedDict
+    groups = OrderedDict()
+    maxlen = 9
     for item in items:
         name = item.name
         dotpos = name.rfind(".")
         group_name = name[:dotpos]
+
+        # prettify extension modules..
+        if group_name.startswith("paver_"):
+          group_name = "paver.ext." + group_name[6:]
+
         maxlen = max(len(item.shortname), maxlen)
-        if current_group_name != group_name:
-            current_group = []
-            current_group_name = group_name
-            groups.append([group_name, current_group])
-        current_group.append(item)
+        groups.setdefault(group_name, [])
+        groups[group_name].append(item)
     return maxlen, groups
+
 
 @task
 @no_auto
@@ -788,13 +852,15 @@ def help(args, help_function):
         task_list = sorted(task_list, key=_task_names_key)
     else:
         task_list = sorted(task_list, cmp=_cmp_task_names)
+    # here
     maxlen, task_list = _group_by_module(task_list)
     fmt = "  %-" + str(maxlen) + "s - %s"
-    for group_name, group in task_list:
+    for group_name, group in task_list.iteritems():
         print_("\nTasks from %s:" % (group_name))
-        for task in group:
+        for task in sorted(group, key=lambda kv: kv.name):
             if not getattr(task, "no_help", False):
                 print_(fmt % (task.shortname, task.description))
+
 
 def _process_commands(args, auto_pending=False):
     first_loop = True
@@ -803,7 +869,7 @@ def _process_commands(args, auto_pending=False):
         if auto_pending:
             if task and not task.no_auto:
                 environment.call_task('auto')
-                auto_pending=False
+                auto_pending = False
         if task is None:
             if first_loop:
                 task = environment.get_task('default')
@@ -813,6 +879,7 @@ def _process_commands(args, auto_pending=False):
                 break
         task()
         first_loop = False
+
 
 def call_pavement(new_pavement, args):
     if isinstance(args, six.string_types):
@@ -830,6 +897,7 @@ def call_pavement(new_pavement, args):
     finally:
         os.chdir(cwd)
     environment = environment_stack.pop()
+
 
 def _launch_pavement(args):
     mod = types.ModuleType("pavement")
@@ -869,7 +937,8 @@ def _launch_pavement(args):
             or '--propagate-traceback' in args:
             raise
         print_("\n\n*** Problem with pavement:\n%s\n%s\n\n" % (
-                    abspath(environment.pavement_file), e))
+               abspath(environment.pavement_file), e))
+
 
 def main(args=None):
     global environment
