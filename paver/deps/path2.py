@@ -8,8 +8,8 @@
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -91,8 +91,10 @@ _textmode = 'U'
 if hasattr(__builtin__, 'file') and not hasattr(file, 'newlines'):
     _textmode = 'r'
 
+
 class TreeWalkWarning(Warning):
     pass
+
 
 class path(_base):
     """ Represents a filesystem path.
@@ -116,7 +118,8 @@ class path(_base):
         # On python 2, unicode result breaks os.path.join
         # if we are inheriting from str
         # see https://github.com/paver/paver/issues/78
-        if isinstance(resultStr, unicode) and not os.path.supports_unicode_filenames:
+        if (isinstance(resultStr, unicode)
+           and not os.path.supports_unicode_filenames):
             resultStr = resultStr.encode('utf-8')
 
         if resultStr is NotImplemented:
@@ -156,14 +159,29 @@ class path(_base):
     #
     # --- Operations on path strings.
 
-    def abspath(self):       return self.__class__(os.path.abspath(self))
-    def normcase(self):      return self.__class__(os.path.normcase(self))
-    def normpath(self):      return self.__class__(os.path.normpath(self))
-    def realpath(self):      return self.__class__(os.path.realpath(self))
-    def expanduser(self):    return self.__class__(os.path.expanduser(self))
-    def expandvars(self):    return self.__class__(os.path.expandvars(self))
-    def dirname(self):       return self.__class__(os.path.dirname(self))
-    def basename(self):      return self.__class__(os.path.basename(self))
+    def abspath(self):
+      return self.__class__(os.path.abspath(self))
+
+    def normcase(self):
+      return self.__class__(os.path.normcase(self))
+
+    def normpath(self):
+      return self.__class__(os.path.normpath(self))
+
+    def realpath(self):
+      return self.__class__(os.path.realpath(self))
+
+    def expanduser(self):
+      return self.__class__(os.path.expanduser(self))
+
+    def expandvars(self):
+      return self.__class__(os.path.expandvars(self))
+
+    def dirname(self):
+      return self.__class__(os.path.dirname(self))
+
+    def basename(self):
+      return self.__class__(os.path.basename(self))
 
     def expand(self):
         """ Clean up a filename by calling expandvars(),
@@ -190,7 +208,8 @@ class path(_base):
         dirname, None, None,
         """ This path's parent directory, as a new path object.
 
-        For example, path('/usr/local/lib/libpython.so').parent == path('/usr/local/lib')
+        For example:
+          path('/usr/local/lib/libpython.so').parent == path('/usr/local/lib')
         """)
 
     name = property(
@@ -204,8 +223,10 @@ class path(_base):
         _get_namebase, None, None,
         """ The same as path.name, but with one file extension stripped off.
 
-        For example, path('/home/guido/python.tar.gz').name     == 'python.tar.gz',
-        but          path('/home/guido/python.tar.gz').namebase == 'python.tar'
+        For example:
+          path('/home/guido/python.tar.gz').name     == 'python.tar.gz',
+        but
+          path('/home/guido/python.tar.gz').namebase == 'python.tar'
         """)
 
     ext = property(
@@ -572,6 +593,7 @@ class path(_base):
             f.write(bytes)
         finally:
             f.close()
+        return self
 
     def text(self, encoding=None, errors='strict'):
         r""" Open this file, read it in, return the content as a string.
@@ -610,7 +632,9 @@ class path(_base):
                      .replace(u'\x85', u'\n')
                      .replace(u'\u2028', u'\n'))
 
-    def write_text(self, text, encoding=None, errors='strict', linesep=os.linesep, append=False):
+    def write_text(
+            self, text, encoding=None, errors='strict', linesep=os.linesep,
+            append=False):
         r""" Write the given text to this file.
 
         The default behavior is to overwrite any existing file;
@@ -687,6 +711,7 @@ class path(_base):
             if encoding is None:
                 encoding = sys.getdefaultencoding()
             bytes = text.encode(encoding, errors)
+
         else:
             # It is an error to specify an encoding if 'text' is
             # an 8-bit string.
@@ -698,6 +723,7 @@ class path(_base):
                 bytes = text.replace('\n', linesep)
 
         self.write_bytes(bytes, append)
+        return self
 
     def lines(self, encoding=None, errors='strict', retain=True):
         r""" Open this file, read all lines, return them in a list.
@@ -831,33 +857,49 @@ class path(_base):
     # (e.g. isdir on Windows, Python 3.2.2), and compiled functions don't get
     # bound. Playing it safe and wrapping them all in method calls.
 
-    def isabs(self): return os.path.isabs(self)
-    def exists(self): return os.path.exists(self)
-    def isdir(self): return os.path.isdir(self)
-    def isfile(self): return os.path.isfile(self)
-    def islink(self): return os.path.islink(self)
-    def ismount(self): return os.path.ismount(self)
+    def isabs(self):
+      return os.path.isabs(self)
+
+    def exists(self):
+      return os.path.exists(self)
+
+    def isdir(self):
+      return os.path.isdir(self)
+
+    def isfile(self):
+      return os.path.isfile(self)
+
+    def islink(self):
+      return os.path.islink(self)
+
+    def ismount(self):
+      return os.path.ismount(self)
 
     if hasattr(os.path, 'samefile'):
-        def samefile(self, otherfile): return os.path.samefile(self, otherfile)
+        def samefile(self, otherfile):
+          return os.path.samefile(self, otherfile)
 
-    def getatime(self): return os.path.getatime(self)
+    def getatime(self):
+      return os.path.getatime(self)
     atime = property(
         getatime, None, None,
         """ Last access time of the file. """)
 
-    def getmtime(self): return os.path.getmtime(self)
+    def getmtime(self):
+      return os.path.getmtime(self)
     mtime = property(
         getmtime, None, None,
         """ Last-modified time of the file. """)
 
     if hasattr(os.path, 'getctime'):
-        def getctime(self): return os.path.getctime(self)
+        def getctime(self):
+          return os.path.getctime(self)
         ctime = property(
             getctime, None, None,
             """ Creation time of the file. """)
 
-    def getsize(self): return os.path.getsize(self)
+    def getsize(self):
+      return os.path.getsize(self)
     size = property(
         getsize, None, None,
         """ Size of the file, in bytes. """)
@@ -892,11 +934,13 @@ class path(_base):
             desc = win32security.GetFileSecurity(
                 self, win32security.OWNER_SECURITY_INFORMATION)
             sid = desc.GetSecurityDescriptorOwner()
-            account, domain, typecode = win32security.LookupAccountSid(None, sid)
+            account, domain, typecode = win32security.LookupAccountSid(
+              None, sid)
             return domain + u'\\' + account
         else:
             if pwd is None:
-                raise NotImplementedError("path.owner is not implemented on this platform.")
+                raise NotImplementedError(
+                  "path.owner is not implemented on this platform.")
             st = self.stat()
             return pwd.getpwuid(st.st_uid).pw_name
 
@@ -919,19 +963,24 @@ class path(_base):
     def utime(self, times):
         """ Set the access and modified times of this file. """
         os.utime(self, times)
+        return self
 
     def chmod(self, mode):
         os.chmod(self, mode)
+        return self
 
     if hasattr(os, 'chown'):
         def chown(self, uid, gid):
             os.chown(self, uid, gid)
+            return self
 
     def rename(self, new):
         os.rename(self, new)
+        return self
 
     def renames(self, new):
         os.renames(self, new)
+        return self
 
     #
     # --- Create/delete operations on directories
@@ -939,10 +988,12 @@ class path(_base):
     def mkdir(self, mode=0777):
         if not self.exists():
             os.mkdir(self, mode)
+        return self
 
     def mkdir_p(self, mode=0777):
         try:
             self.mkdir(mode)
+            return self
         except OSError, e:
             if e.errno != errno.EEXIST:
                 raise
@@ -950,10 +1001,12 @@ class path(_base):
     def makedirs(self, mode=0777):
         if not self.exists():
             os.makedirs(self, mode)
+        return self
 
     def makedirs_p(self, mode=0777):
         try:
             self.makedirs(mode)
+            return self
         except OSError, e:
             if e.errno != errno.EEXIST:
                 raise
@@ -961,10 +1014,12 @@ class path(_base):
     def rmdir(self):
         if self.exists():
             os.rmdir(self)
+        return self
 
     def rmdir_p(self):
         try:
             self.rmdir()
+            return self
         except OSError, e:
             if e.errno != errno.ENOTEMPTY and e.errno != errno.EEXIST:
                 raise
@@ -972,10 +1027,12 @@ class path(_base):
     def removedirs(self):
         if self.exists():
             os.removedirs(self)
+        return self
 
     def removedirs_p(self):
         try:
             self.removedirs()
+            return self
         except OSError, e:
             if e.errno != errno.ENOTEMPTY and e.errno != errno.EEXIST:
                 raise
@@ -989,14 +1046,17 @@ class path(_base):
         fd = os.open(self, os.O_WRONLY | os.O_CREAT, 0666)
         os.close(fd)
         os.utime(self, None)
+        return self
 
     def remove(self):
         if self.exists():
             os.remove(self)
+        return self
 
     def remove_p(self):
         try:
             self.unlink()
+            return self
         except OSError, e:
             if e.errno != errno.ENOENT:
                 raise
@@ -1004,9 +1064,10 @@ class path(_base):
     def unlink(self):
         if self.exists():
             os.unlink(self)
+        return self
 
     def unlink_p(self):
-        self.remove_p()
+        return self.remove_p()
 
     # --- Links
 
@@ -1014,11 +1075,13 @@ class path(_base):
         def link(self, newpath):
             """ Create a hard link at 'newpath', pointing to this file. """
             os.link(self, newpath)
+            return self
 
     if hasattr(os, 'symlink'):
         def symlink(self, newlink):
             """ Create a symbolic link at 'newlink', pointing here. """
             os.symlink(self, newlink)
+            return self
 
     if hasattr(os, 'readlink'):
         def readlink(self):
@@ -1042,25 +1105,70 @@ class path(_base):
     #
     # --- High-level functions from shutil
 
-    copyfile = shutil.copyfile
-    copymode = shutil.copymode
-    copystat = shutil.copystat
-    copy = shutil.copy
-    copy2 = shutil.copy2
-    copytree = shutil.copytree
-    if hasattr(shutil, 'move'):
-        move = shutil.move
+    def copyfile(self, *args, **kwargs):
+        shutil.copyfile(self, *args, **kwargs)
+        return self
+
+    def copymode(self, *args, **kwargs):
+        shutil.copymode(self, *args, **kwargs)
+        return self
+
+    def copystat(self, *args, **kwargs):
+        shutil.copystat(self, *args, **kwargs)
+        return self
+
+    def copy(self, *args, **kwargs):
+        shutil.copy(self, *args, **kwargs)
+        return self
+
+    def copy2(self, *args, **kwargs):
+        shutil.copy2(self, *args, **kwargs)
+        return self
+
+    def copytree(self, *args, **kwargs):
+        shutil.copytree(self, *args, **kwargs)
+        return self
 
     def rmtree(self, *args, **kw):
         if self.exists():
             shutil.rmtree(self, *args, **kw)
+        return self
 
     def rmtree_p(self):
         try:
             self.rmtree()
+            return self
         except OSError, e:
             if e.errno != errno.ENOENT:
                 raise
+
+    if hasattr(shutil, 'move'):
+        def move(self, *args, **kwargs):
+          shutil.move(self, *args, **kwargs)
+          return self
+
+    #
+    # --- shorthand methods
+
+    def cp(self, *args, **kw):
+        if self.isdir():
+            ignore = kw.pop("ignore", None)
+            if ignore:
+              ignore = shutil.ignore_patterns(*ignore)
+            self.copytree(ignore=ignore, *args, **kw)
+        elif self.isfile():
+            self.copy(*args, **kw)
+        return self
+
+    if hasattr(os, 'symlink'):
+        def sym(self, newlink):
+            """
+            symlinks to a new path, unlinking if the destination already
+            exists.
+            """
+            if newlink.islink():
+                newlink.unlink()
+            return self.symlink(newlink)
 
     #
     # --- Special stuff from os
@@ -1068,7 +1176,9 @@ class path(_base):
     if hasattr(os, 'chroot'):
         def chroot(self):
             os.chroot(self)
+            return self
 
     if hasattr(os, 'startfile'):
         def startfile(self):
             os.startfile(self)
+            return self
